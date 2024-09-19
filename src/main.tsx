@@ -1,10 +1,17 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
-import './index.css'
+import ReactDOM from 'react-dom/client';
+import './style/index.css';
+import '@mantine/core/styles.css';
+import { MantineProvider } from '@mantine/core';
+import { Router } from './Router/Router.tsx';
+import { MainLayout } from './layout/MainLayout.tsx';
+import { BrowserRouter } from 'react-router-dom';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
-)
+	<MantineProvider defaultColorScheme='dark'>
+		<BrowserRouter>
+			<MainLayout>
+				<Router />
+			</MainLayout>
+		</BrowserRouter>
+	</MantineProvider>
+);
