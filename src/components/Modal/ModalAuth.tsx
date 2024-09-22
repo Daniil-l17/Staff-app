@@ -1,13 +1,16 @@
 import { Button, Modal } from '@mantine/core';
-import { FC } from 'react';
+import { Dispatch, FC, SetStateAction } from 'react';
 import { SubmitHandler, useForm } from 'react-hook-form';
 import { InputCustom } from '../../utils/Input';
 import { auth } from '../../services/auth/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 
 interface Props {
 	opened: boolean;
 	registerInfo: 'login' | 'register' | '';
+	setRegister: Dispatch<SetStateAction<'login' | 'register' | ''>>;
 	close: () => void;
 }
 
@@ -26,8 +29,11 @@ export const ModalAuth: FC<Props> = ({ opened, close, registerInfo }) => {
 		setValue,
 		formState: { errors }
 	} = useForm<Inputs>();
+
 	const queryClient = useQueryClient();
-	const { data, isPending, mutate } = useMutation({
+	const navigate = useNavigate();
+
+	const { isPending, mutate } = useMutation({
 		mutationFn: async (dto: Omit<Inputs, 'confirmThePassword'>) => {
 			return registerInfo === 'login' ? await auth.login(dto) : await auth.register(dto);
 		},
@@ -37,6 +43,14 @@ export const ModalAuth: FC<Props> = ({ opened, close, registerInfo }) => {
 				localStorage.setItem('token', res?.token);
 				queryClient.invalidateQueries({ queryKey: ['userAuth'] });
 				close();
+				navigate('/staff');
+			}
+		},
+		onError: () => {
+			if (registerInfo === 'login') {
+				toast.error('Данные неверны!', { theme: 'colored' });
+			} else {
+				toast.error('Пользователь уже существует!', { theme: 'colored' });
 			}
 		}
 	});
@@ -44,10 +58,10 @@ export const ModalAuth: FC<Props> = ({ opened, close, registerInfo }) => {
 	const onSubmit: SubmitHandler<Inputs> = async dto => {
 		if (watch().password === watch().confirmThePassword) {
 			mutate(dto);
+		} else {
+			toast.error('Пароли не совпадают!', { theme: 'colored' });
 		}
 	};
-
-	console.log(data);
 
 	return (
 		<Modal

@@ -1,41 +1,45 @@
 import { useNavigate } from 'react-router-dom';
-
 import { Button, Loader, Table } from '@mantine/core';
 import { useQuery } from '@tanstack/react-query';
 import { employeeApi } from '../services/employee/employee';
 import { useAuth } from '../hooks/useAuth';
 import ModalCreate from '../components/Modal/ModalCreate';
 import { useDisclosure } from '@mantine/hooks';
+import { useEffect } from 'react';
+import { TableItem } from '../components/TableItem';
+import { TableThead } from '../components/TableThead';
 
-export type DataType = {
-	id?: string;
-	firstName: string;
-	lastName: string;
-	age: string;
-	position: string;
-	address: string;
-	userId?: string;
-};
-
-export default function Staff() {
-	const naavigate = useNavigate();
-	const user = useAuth();
+export const Staff = () => {
+	const navigate = useNavigate();
+	const { isLoading, user, isFetching: isFetchingUser } = useAuth();
 	const [opened, { open, close }] = useDisclosure(false);
+
+	useEffect(() => {
+		if (!isLoading) {
+			if (!user?.id.length) {
+				navigate('/');
+			}
+		}
+	}, [user, isLoading, isFetchingUser]);
+
 	const { data, isFetching, error } = useQuery({
-		queryKey: ['employee'],
+		queryKey: ['staff'],
 		queryFn: async () => {
 			return await employeeApi.employeAll();
 		},
-		enabled: !!user.data?.id,
+		enabled: !!user?.id,
+		select: data => [...data].reverse(),
 		refetchOnWindowFocus: false
 	});
 
-	if (user.isFetching)
+	if (isLoading)
 		return (
-			<div className='w-full flex min-h-[200px] justify-center items-center '>
+			<div className='w-full flex min-h-[800px] justify-center items-center '>
 				<Loader />
 			</div>
 		);
+
+	if (!user?.id) return null;
 
 	return (
 		<div className='w-full !px-4 m-auto max-w-[1600px] mt-10'>
@@ -44,28 +48,8 @@ export default function Staff() {
 				<Button>добавить сотрудника</Button>
 			</div>
 			<Table striped withRowBorders={true}>
-				<Table.Thead>
-					<Table.Tr>
-						<Table.Th className='!w-[200px]'>Имя</Table.Th>
-						<Table.Th className='!w-[200px]'>Фамилия</Table.Th>
-						<Table.Th className='!w-[200px]'>Возраст</Table.Th>
-						<Table.Th className='!w-[200px]'>Адрес</Table.Th>
-						<Table.Th className='!w-[200px]'>Должность</Table.Th>
-					</Table.Tr>
-				</Table.Thead>
-				<Table.Tbody>
-					{!isFetching
-						? data?.map(element => (
-								<Table.Tr onClick={() => naavigate(`/employee/${element.id}`)} className=' hover:bg-[#373c47] cursor-pointer' key={element.id}>
-									<Table.Td>{element.firstName}</Table.Td>
-									<Table.Td>{element.lastName}</Table.Td>
-									<Table.Td>{element.age}</Table.Td>
-									<Table.Td>{element.address}</Table.Td>
-									<Table.Td>{element.position}</Table.Td>
-								</Table.Tr>
-						  ))
-						: null}
-				</Table.Tbody>
+				<TableThead />
+				<Table.Tbody>{!isFetching ? data?.map(element => <TableItem element={element} />) : null}</Table.Tbody>
 			</Table>
 			{isFetching ? (
 				<div className='flex justify-center min-h-[200px] items-center'>
@@ -74,7 +58,7 @@ export default function Staff() {
 			) : null}
 			{!isFetching && !data?.length && !error ? (
 				<div className=' mt-4 w-full'>
-					<h2 className=' text-2lg text-center'>Сотрудников не найденно</h2>
+					<h2 className=' text-2lg font-medium text-center'>Сотрудников не найденно</h2>
 				</div>
 			) : null}
 			{error && (
@@ -84,4 +68,4 @@ export default function Staff() {
 			)}
 		</div>
 	);
-}
+};

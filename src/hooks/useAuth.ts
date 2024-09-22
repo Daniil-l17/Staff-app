@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { auth } from '../services/auth/auth';
 
 export const useAuth = () => {
-	const { error, data, isFetching } = useQuery({
+	const { error, data, isFetching, isLoading, refetch, isPending, isError } = useQuery({
 		queryKey: ['userAuth'],
 		queryFn: async () => {
 			return await auth.currentUser();
@@ -11,5 +11,5 @@ export const useAuth = () => {
 		refetchOnWindowFocus: false
 	});
 
-	return { isFetching, error, data };
+	return { isFetching, error, user: data, isLoading, refetch, isPending, isError };
 };

@@ -1,13 +1,14 @@
-import { Button, Input, Modal } from '@mantine/core';
+import { Button, Modal } from '@mantine/core';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { useState } from 'react';
 import { employeeApi, result } from '../../services/employee/employee';
-import { useForm } from 'react-hook-form';
+import { toast } from 'react-toastify';
+import { positions } from '../../constants/constants';
+import { InputCustom } from '../../utils/Input';
+import { SubmitHandler, useForm } from 'react-hook-form';
 
-const positions = ['Front-end', 'Back-end', 'Дизайнер', 'Тестировщик', 'Аналитик', 'Верстальщик', 'Team Lead'] as const;
-
-interface Inputs {
+export interface InputsSSS {
 	firstName: string;
 	lastName: string;
 	age: string;
@@ -15,38 +16,31 @@ interface Inputs {
 	address: string;
 }
 
-export default function ModalCreate({
-	opened,
-	close,
-	loading,
-	addEmployee
-}: {
-	opened: boolean;
-	close: () => void;
-	loading: boolean;
-	addEmployee: (obj: { firstName: string; lastName: string; age: string; position: string; address: string }) => void;
-}) {
-	const [userInfo, setUserInfo] = useState({
-		firstName: '',
-		lastName: '',
-		age: '',
-		position: '',
-		address: ''
-	});
+export default function ModalCreate({ opened, close }: { opened: boolean; close: () => void }) {
+	const {
+		register,
+		handleSubmit,
+		watch,
+		formState: { errors }
+	} = useForm<InputsSSS>();
 
-	const changeInfo = (e: React.ChangeEvent<HTMLInputElement>) => {
-		setUserInfo(prev => ({ ...prev, [e.target.name]: e.target.value }));
-	};
-
+	const [userInfoPosition, setUserInfoPosition] = useState('');
 	const queryClient = useQueryClient();
 
-	const { data, isPending, mutate } = useMutation({
+	const onSubmit: SubmitHandler<InputsSSS> = dto => {
+		if (userInfoPosition.length) {
+			mutate({ ...dto, position: userInfoPosition });
+		}
+	};
+
+	const { isPending, mutate } = useMutation({
 		mutationFn: async (dto: Omit<result, 'id'>) => {
 			return employeeApi.employeeAdd(dto);
 		},
 		mutationKey: ['employeeAdd'],
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ['employee'] });
+		onSuccess: employee => {
+			queryClient.invalidateQueries({ queryKey: ['staff'] });
+			toast.success(`Сотрудник ${employee.lastName + ' ' + employee.firstName} добавлен!`, { theme: 'colored' });
 			close();
 		}
 	});
@@ -63,27 +57,29 @@ export default function ModalCreate({
 			title='Добавить сотрудника'
 			centered
 		>
-			<div className='flex flex-col gap-4 mt-2'>
-				<Input onChange={changeInfo} name='firstName' variant='filled' placeholder='Имя' />
-				<Input onChange={changeInfo} name='lastName' variant='filled' placeholder='Фамилия' />
-				<Input onChange={changeInfo} name='age' variant='filled' placeholder='Возраст' />
-				<Input onChange={changeInfo} name='address' variant='filled' placeholder='Адрес' />
-				<div className='flex flex-col mb-2 gap-2'>
-					<h2>Должность</h2>
-					<div className='flex justify-start gap-3 flex-wrap'>
-						{positions.map(position => (
-							<Button onClick={() => setUserInfo(prev => ({ ...prev, position }))} color={userInfo.position === position ? 'green' : 'blue'}>
-								{position}
-							</Button>
-						))}
+			<form onSubmit={handleSubmit(onSubmit)}>
+				<div className='flex flex-col gap-4 mt-2'>
+					<InputCustom nameInput='firstName' minLength={3} watch={watch} errors={!!errors.firstName} placeholder='Имя' register={register} />
+					<InputCustom nameInput='lastName' minLength={3} watch={watch} errors={!!errors.lastName} placeholder='Фамилия' register={register} />
+					<InputCustom type='number' nameInput='age' minLength={1} watch={watch} errors={!!errors.age} placeholder='Возраст' register={register} />
+					<InputCustom nameInput='address' minLength={3} watch={watch} errors={!!errors.address} placeholder='Адрес' register={register} />
+					<div className='flex flex-col mb-2 gap-2'>
+						<h2>Должность</h2>
+						<div className='flex justify-start gap-3 flex-wrap'>
+							{positions.map((position, key) => (
+								<Button key={key} onClick={() => setUserInfoPosition(position)} color={userInfoPosition === position ? 'green' : 'blue'}>
+									{position}
+								</Button>
+							))}
+						</div>
 					</div>
 				</div>
-			</div>
-			<div className='flex mt-3 justify-end'>
-				<Button onClick={() => mutate(userInfo)} loading={isPending}>
-					Добавить
-				</Button>
-			</div>
+				<div className='flex mt-3 justify-end'>
+					<Button type='submit' loading={isPending}>
+						Добавить
+					</Button>
+				</div>
+			</form>
 		</Modal>
 	);
 }
