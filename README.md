@@ -21,7 +21,7 @@
 Клонировать проект
 
 ```bash
-https://github.com/Daniil-l17/Staff.git
+https://github.com/Daniil-l17/Staff-app.git
 ```
 
 Устанавливать зависимости
